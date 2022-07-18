@@ -19,6 +19,9 @@ parser.add_argument('--viz', action='store_true')
 parser.add_argument('--vecfield', action='store_true')
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--adjoint', action='store_true')
+parser.add_argument('--equation', type=str, choices=['spiral', 'expanding_spiral', 'ellipse', 'parabola'], default='spiral')
+parser.add_argument('--start_time', type=int, default=-10)
+parser.add_argument('--end_time', type=int, default=10)
 args = parser.parse_args()
 
 if args.adjoint:
@@ -28,44 +31,30 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-tMin = 0.
-tMax = 20. 
-t = torch.linspace(tMin, tMax, args.data_size).to(device)
-# 2D Spiral
-# true_y0 = torch.tensor([[2., 0.]]).to(device)
-# true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]]).to(device)
+def spiral(curr_t):
+    return [[torch.sin(torch.pi * curr_t), torch.cos(torch.pi * curr_t), curr_t]]
 
-# Volterra-Lotka System
-# true_y0 = torch.tensor([[2., 0.]]).to(device)
-# a, b, c, d = 1.5, 1.0, 3.0, 1.0
-# true_A = torch.tensor([[0., -b*c/d], [d*a/b, 0.]])
+def expanding_spiral(curr_t):
+    return [[curr_t * torch.sin(torch.pi * curr_t) / 10, curr_t * torch.cos(torch.pi * curr_t) / 10, curr_t]]
 
-# 3D Spiral
-true_y0 = torch.tensor([[0., 1., 0.]]).to(device)
-true_y = []
+def ellipse(curr_t):
+    return [[torch.cos(torch.pi * curr_t), 2 * torch.sin(torch.pi * curr_t), 3]]
 
-for curr_t in t:
-  true_y.append([[torch.sin(torch.pi * curr_t), torch.cos(torch.pi * curr_t), curr_t]])
+def parabola(curr_t):
+    return [[0.2 * curr_t * curr_t + curr_t + 1, 0.3 * curr_t, curr_t]]
 
-# Expanding 3D spiral
-# true_y0 = torch.tensor([[0., 0., 0.]]).to(device)
-# for curr_t in t:
-#   true_y.append([[curr_t * torch.sin(torch.pi * curr_t) / 10, curr_t * torch.cos(torch.pi * curr_t) / 10, curr_t]])
+if (args.equation == 'spiral'):
+    equation_func = spiral
+elif (args.equation == 'expanding_spiral'):
+    equation_func = expanding_spiral
+elif (args.equation == 'ellipse'):
+    equation_func = ellipse
+elif (args.equation == 'parabola'):
+    equation_func = parabola
 
-# Ellipse
-# true_y0 = torch.tensor([[1., 0., 3.]]).to(device)
-# for curr_t in t:
-#   true_y.append([[torch.cos(torch.pi * curr_t), 2 * torch.sin(torch.pi * curr_t), 3]])
-
-# Parabolic Curve 
-# tMin = -5.
-# tMax = 5.
-# t = torch.linspace(tMin, tMax, args.data_size).to(device)
-# true_y0 = torch.tensor([[1., 0., 0.]]).to(device)
-# for curr_t in t:
-#   true_y.append([[0.2 * curr_t * curr_t + curr_t + 1, 0.3 * curr_t, curr_t]])
-
-true_y = torch.tensor(true_y)
+t = torch.linspace(args.start_time, args.end_time, args.data_size).to(device)
+true_y = torch.tensor(list(map(equation_func, t)))
+true_y0 = torch.tensor(equation_func(torch.tensor(args.start_time))).to(device)
 
 def get_batch():
     s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
@@ -115,7 +104,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         ax_phase.plot(pred_y.cpu().numpy()[:, 0, 0], pred_y.cpu().numpy()[:, 0, 1], pred_y.cpu().numpy()[:, 0, 2], 'b--')
         ax_phase.set_xlim(-2, 2)
         ax_phase.set_ylim(-2, 2)
-        ax_phase.set_zlim(tMin, tMax)
+        ax_phase.set_zlim(args.start_time, args.end_time)
 
         if (args.vecfield):
             ax_vecfield.cla()
@@ -134,7 +123,7 @@ def visualize(true_y, pred_y, odefunc, itr):
             ax_vecfield.quiver(x, y, z, dydt[:, :, :, 0], dydt[:, :, :, 1], dydt[:, :, :, 2], linewidths=widths, color="black")
             ax_vecfield.set_xlim(-2, 2)
             ax_vecfield.set_ylim(-2, 2)
-            ax_vecfield.set_zlim(tMin, tMax)
+            ax_vecfield.set_zlim(args.start_time, args.end_time)
 
         fig.tight_layout()
         plt.savefig('png/{:03d}'.format(itr))
