@@ -106,7 +106,7 @@ def visualize(true_y, pred_y, odefunc, itr):
             ax_vecfield.set_ylabel('y')
             ax_vecfield.set_zlabel('z')
 
-            z, y, x = np.mgrid[0:20:21j, -2:2:21j, -2:2:21j]
+            z, y, x = np.mgrid[args.start_time:args.end_time:21j, -2:2:21j, -2:2:21j]
             dydt = odefunc(0, torch.Tensor(np.stack([x, y, z], -1).reshape(21 * 21 * 21, 3)).to(device)).cpu().detach().numpy()
             mag = np.sqrt(dydt[:, 0]**2 + dydt[:, 1]**2 + dydt[:, 2]**2).reshape(-1, 1)
             dydt = (dydt / mag)
