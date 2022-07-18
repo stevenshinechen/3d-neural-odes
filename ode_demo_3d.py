@@ -43,15 +43,7 @@ def ellipse(curr_t):
 def parabola(curr_t):
     return [[0.2 * curr_t * curr_t + curr_t + 1, 0.3 * curr_t, curr_t]]
 
-if (args.equation == 'spiral'):
-    equation_func = spiral
-elif (args.equation == 'expanding_spiral'):
-    equation_func = expanding_spiral
-elif (args.equation == 'ellipse'):
-    equation_func = ellipse
-elif (args.equation == 'parabola'):
-    equation_func = parabola
-
+equation_func = globals()[args.equation]
 t = torch.linspace(args.start_time, args.end_time, args.data_size).to(device)
 true_y = torch.tensor(list(map(equation_func, t)))
 true_y0 = torch.tensor(equation_func(torch.tensor(args.start_time))).to(device)
