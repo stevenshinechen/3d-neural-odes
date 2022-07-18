@@ -24,6 +24,7 @@ parser.add_argument('--start_time', type=int, default=-10, help='specifies the s
 parser.add_argument('--end_time', type=int, default=10, help='specifies the end time for the equation')
 parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3, help='learning rate for the optimizer')
 parser.add_argument('-s', '--network_size', action='count', default=0, help='increase the size of the neural network')
+parser.add_argument('--nfull', type=int, default=0, help='the number of full batch iterations after the initial mini-batch training')
 args = parser.parse_args()
 
 if args.adjoint:
@@ -200,9 +201,14 @@ if __name__ == '__main__':
     
     loss_meter = RunningAverageMeter(0.97)
 
-    for itr in range(1, args.niters + 1):
+    for itr in range(1, args.niters + args.nfull + 1):
         optimizer.zero_grad()
-        batch_y0, batch_t, batch_y = get_batch()
+        if itr > args.niters:
+            batch_y0 = true_y0
+            batch_t = t
+            batch_y = true_y
+        else:
+            batch_y0, batch_t, batch_y = get_batch()
         pred_y = odeint(func, batch_y0, batch_t).to(device)
         loss = torch.mean(torch.abs(pred_y - batch_y))
         loss.backward()
