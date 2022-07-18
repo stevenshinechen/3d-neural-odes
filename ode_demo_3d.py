@@ -28,7 +28,9 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-t = torch.linspace(0., 20., args.data_size).to(device)
+tMin = 0.
+tMax = 20. 
+t = torch.linspace(tMin, tMax, args.data_size).to(device)
 # 2D Spiral
 # true_y0 = torch.tensor([[2., 0.]]).to(device)
 # true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]]).to(device)
@@ -39,11 +41,11 @@ t = torch.linspace(0., 20., args.data_size).to(device)
 # true_A = torch.tensor([[0., -b*c/d], [d*a/b, 0.]])
 
 # 3D Spiral
-# true_y0 = torch.tensor([[0., 1., 0.]]).to(device)
+true_y0 = torch.tensor([[0., 1., 0.]]).to(device)
 true_y = []
 
-# for curr_t in t:
-#   true_y.append([[torch.sin(torch.pi * curr_t), torch.cos(torch.pi * curr_t), curr_t]])
+for curr_t in t:
+  true_y.append([[torch.sin(torch.pi * curr_t), torch.cos(torch.pi * curr_t), curr_t]])
 
 # Expanding 3D spiral
 # true_y0 = torch.tensor([[0., 0., 0.]]).to(device)
@@ -51,9 +53,17 @@ true_y = []
 #   true_y.append([[curr_t * torch.sin(torch.pi * curr_t) / 10, curr_t * torch.cos(torch.pi * curr_t) / 10, curr_t]])
 
 # Ellipse
-true_y0 = torch.tensor([[1., 0., 3.]]).to(device)
-for curr_t in t:
-  true_y.append([[torch.cos(torch.pi * curr_t), 2 * torch.sin(torch.pi * curr_t), 3]])
+# true_y0 = torch.tensor([[1., 0., 3.]]).to(device)
+# for curr_t in t:
+#   true_y.append([[torch.cos(torch.pi * curr_t), 2 * torch.sin(torch.pi * curr_t), 3]])
+
+# Parabolic Curve 
+# tMin = -5.
+# tMax = 5.
+# t = torch.linspace(tMin, tMax, args.data_size).to(device)
+# true_y0 = torch.tensor([[1., 0., 0.]]).to(device)
+# for curr_t in t:
+#   true_y.append([[0.2 * curr_t * curr_t + curr_t + 1, 0.3 * curr_t, curr_t]])
 
 true_y = torch.tensor(true_y)
 
@@ -91,7 +101,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         ax_traj.set_xlabel('t')
         ax_traj.set_ylabel('x,y,z')
         ax_traj.plot(t.cpu().numpy(), true_y.cpu().numpy()[:, 0, 0], t.cpu().numpy(), true_y.cpu().numpy()[:, 0, 1], t.cpu().numpy(), true_y.cpu().numpy()[:, 0, 2], 'g-')
-        ax_traj.plot(t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 0], '--', t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 1], t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 2], 'b--')
+        ax_traj.plot(t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 0], '--', t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 1], 'r--', t.cpu().numpy(), pred_y.cpu().numpy()[:, 0, 2], 'b--')
         ax_traj.set_xlim(t.cpu().min(), t.cpu().max())
         ax_traj.set_ylim(-2, 2)
         ax_traj.legend()
@@ -105,7 +115,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         ax_phase.plot(pred_y.cpu().numpy()[:, 0, 0], pred_y.cpu().numpy()[:, 0, 1], pred_y.cpu().numpy()[:, 0, 2], 'b--')
         ax_phase.set_xlim(-2, 2)
         ax_phase.set_ylim(-2, 2)
-        ax_phase.set_zlim(0, 20)
+        ax_phase.set_zlim(tMin, tMax)
 
         if (args.vecfield):
             ax_vecfield.cla()
@@ -124,7 +134,7 @@ def visualize(true_y, pred_y, odefunc, itr):
             ax_vecfield.quiver(x, y, z, dydt[:, :, :, 0], dydt[:, :, :, 1], dydt[:, :, :, 2], linewidths=widths, color="black")
             ax_vecfield.set_xlim(-2, 2)
             ax_vecfield.set_ylim(-2, 2)
-            ax_vecfield.set_zlim(0, 20)
+            ax_vecfield.set_zlim(tMin, tMax)
 
         fig.tight_layout()
         plt.savefig('png/{:03d}'.format(itr))
