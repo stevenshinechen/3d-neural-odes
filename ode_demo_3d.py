@@ -22,6 +22,7 @@ parser.add_argument('--vecfield', action='store_true', help='displays the learne
 parser.add_argument('--equation', type=str, choices=['spiral', 'expanding_spiral', 'ellipse', 'parabola'], default='spiral', help='specifies the equation that the Neural ODE tries to fit')
 parser.add_argument('--start_time', type=int, default=-10, help='specifies the start time for the equation')
 parser.add_argument('--end_time', type=int, default=10, help='specifies the end time for the equation')
+parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3, help='learning rate for the optimizer')
 parser.add_argument('-s', '--network_size', action='count', default=0, help='increase the size of the neural network')
 args = parser.parse_args()
 
@@ -129,7 +130,19 @@ class ODEFunc(nn.Module):
     def __init__(self):
         super(ODEFunc, self).__init__()
 
-        if (args.network_size >= 1):
+        if args.network_size >= 2:
+            self.net = nn.Sequential(
+                nn.Linear(3, 50),
+                nn.Tanh(),
+                nn.Linear(50, 150),
+                nn.Tanh(),
+                nn.Linear(150, 150),
+                nn.Tanh(),
+                nn.Linear(150, 50),
+                nn.Tanh(),
+                nn.Linear(50, 3),
+            )
+        elif args.network_size == 1:
             self.net = nn.Sequential(
                 nn.Linear(3, 50),
                 nn.Tanh(),
@@ -180,7 +193,7 @@ if __name__ == '__main__':
 
     func = ODEFunc().to(device)
     
-    optimizer = optim.RMSprop(func.parameters(), lr=1e-3)
+    optimizer = optim.RMSprop(func.parameters(), lr=args.learning_rate)
     end = time.time()
 
     time_meter = RunningAverageMeter(0.97)
