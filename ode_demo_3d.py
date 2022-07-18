@@ -22,6 +22,7 @@ parser.add_argument('--adjoint', action='store_true')
 parser.add_argument('--equation', type=str, choices=['spiral', 'expanding_spiral', 'ellipse', 'parabola'], default='spiral')
 parser.add_argument('--start_time', type=int, default=-10)
 parser.add_argument('--end_time', type=int, default=10)
+parser.add_argument('-s', '--network_size', action='count', default=0, help='increase the size of the neural network')
 args = parser.parse_args()
 
 if args.adjoint:
@@ -128,30 +129,22 @@ class ODEFunc(nn.Module):
     def __init__(self):
         super(ODEFunc, self).__init__()
 
-        # 2D net
-        # self.net = nn.Sequential(
-        #     nn.Linear(2, 50),
-        #     nn.Tanh(),
-        #     nn.Linear(50, 2),
-        # )
-
-        # 3D net
-        self.net = nn.Sequential(
-            nn.Linear(3, 50),
-            nn.Tanh(),
-            nn.Linear(50, 3),
-        )
-
-        # Large 3D net
-        # self.net = nn.Sequential(
-        #     nn.Linear(3, 50),
-        #     nn.Tanh(),
-        #     nn.Linear(50, 150),
-        #     nn.Tanh(),
-        #     nn.Linear(150, 50),
-        #     nn.Tanh(),
-        #     nn.Linear(50, 3),
-        # )
+        if (args.network_size >= 1):
+            self.net = nn.Sequential(
+                nn.Linear(3, 50),
+                nn.Tanh(),
+                nn.Linear(50, 150),
+                nn.Tanh(),
+                nn.Linear(150, 50),
+                nn.Tanh(),
+                nn.Linear(50, 3),
+            )
+        else:
+            self.net = nn.Sequential(
+                nn.Linear(3, 50),
+                nn.Tanh(),
+                nn.Linear(50, 3),
+            )
 
         for m in self.net.modules():
             if isinstance(m, nn.Linear):
