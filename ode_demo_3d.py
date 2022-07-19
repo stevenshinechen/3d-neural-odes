@@ -51,8 +51,16 @@ t = torch.linspace(args.start_time, args.end_time, args.data_size).to(device)
 true_y = torch.tensor(list(map(equation_func, t)))
 true_y0 = torch.tensor(equation_func(torch.tensor(args.start_time))).to(device)
 
+def get_full_batch():
+    s = torch.from_numpy(np.arange(args.data_size - args.batch_time, dtype=np.int64))
+    return get_batch_from_indices(s)
+
+
 def get_batch():
     s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time, dtype=np.int64), args.batch_size, replace=False))
+    return get_batch_from_indices(s)
+
+def get_batch_from_indices(s):
     batch_y0 = true_y[s]  # (M, D)
     batch_t = t[:args.batch_time]  # (T)
     batch_y = torch.stack([true_y[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, D)
@@ -204,9 +212,7 @@ if __name__ == '__main__':
     for itr in range(1, args.niters + args.nfull + 1):
         optimizer.zero_grad()
         if itr > args.niters:
-            batch_y0 = true_y0
-            batch_t = t
-            batch_y = true_y
+            batch_y0, batch_t, batch_y = get_full_batch()
         else:
             batch_y0, batch_t, batch_y = get_batch()
         pred_y = odeint(func, batch_y0, batch_t).to(device)
