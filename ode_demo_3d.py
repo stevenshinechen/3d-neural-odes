@@ -25,6 +25,7 @@ parser.add_argument('--end_time', type=int, default=10, help='specifies the end 
 parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3, help='learning rate for the optimizer')
 parser.add_argument('-s', '--network_size', action='count', default=0, help='increase the size of the neural network')
 parser.add_argument('--nfull', type=int, default=0, help='the number of full batch iterations after the initial mini-batch training')
+parser.add_argument('--momentum', type=float, default=0., help='momentum parameter for the optimizer')
 args = parser.parse_args()
 
 if args.adjoint:
@@ -202,7 +203,7 @@ if __name__ == '__main__':
 
     func = ODEFunc().to(device)
     
-    optimizer = optim.RMSprop(func.parameters(), lr=args.learning_rate)
+    optimizer = optim.RMSprop(func.parameters(), lr=args.learning_rate, momentum=args.momentum)
     end = time.time()
 
     time_meter = RunningAverageMeter(0.97)
